@@ -516,7 +516,11 @@ const ANV = {
     
     initCharts: () => {
         if (typeof Chart === 'undefined') { console.warn("Chart.js not loaded"); return; }
-        Chart.defaults.font.family = 'inherit';
+        if (typeof Chart === 'undefined') { 
+    console.warn("Chart.js has not loaded yet. Skipping chart initialization.");
+    return; 
+}
+Chart.defaults.font.family = 'inherit';
         const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
         const chartContexts = {
             cafeVsStay: document.getElementById('cafeVsStayChart'),
@@ -560,5 +564,6 @@ const ANV = {
     showModal: (title, bodyHtml) => { ANV.elements.modalTitle.textContent = title; ANV.elements.modalBody.innerHTML = bodyHtml; ANV.elements.modal.classList.add('active'); },
     hideModal: () => { ANV.elements.modal.classList.remove('active'); ANV.elements.modalBody.innerHTML = ''; }
 };
+
 
 if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', ANV.init); } else { ANV.init(); }
