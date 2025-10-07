@@ -125,7 +125,9 @@
             .isp-items-table thead { border-bottom: 2px solid #333; }
             .isp-items-table th { padding: 3mm 1mm; text-align: left; color: #555; font-weight: bold; }
             .isp-items-table td { padding: 3mm 1mm; border-bottom: 1px solid #eee; }
-            .isp-items-table th:nth-child(3), .isp-items-table td:nth-child(3), .isp-items-table th:nth-child(4), .isp-items-table td:nth-child(4), .isp-items-table th:nth-child(5), .isp-items-table td:nth-child(5) { text-align: right; }
+            .isp-items-table th:nth-child(3), .isp-items-table td:nth-child(3),
+            .isp-items-table th:nth-child(4), .isp-items-table td:nth-child(4),
+            .isp-items-table th:nth-child(5), .isp-items-table td:nth-child(5) { text-align: right; }
             .isp-totals { margin-left: auto; width: 50%; max-width: 250px; font-size: 11pt; }
             .isp-totals table { width: 100%; }
             .isp-totals td { padding: 3mm; }
@@ -325,7 +327,7 @@
     <script src="config.js"></script>
     <script>
         function mainApp() {
-            const ANV = {
+            window.ANV = {
                 state: { settings: {}, bookings: [], expenses: [], menu: [] },
                 elements: {}, charts: {}, activeBookingId: null, activeExpenseId: null, activeInvoiceBookingId: null,
 
@@ -492,12 +494,13 @@
                 showModal: (title, bodyHtml) => { ANV.elements.modalTitle.textContent = title; ANV.elements.modalBody.innerHTML = bodyHtml; ANV.elements.modal.classList.add('active'); },
                 hideModal: () => { ANV.elements.modal.classList.remove('active'); ANV.elements.modalBody.innerHTML = ''; }
             };
-
-            document.addEventListener('DOMContentLoaded', ANV.init);
+            
+            // This is the trigger that starts the app.
+            ANV.init();
         }
 
         // This robustly waits for the config file to load before initializing the app.
-        (function() {
+        document.addEventListener('DOMContentLoaded', () => {
             if (window.ANV_CONFIG) {
                 mainApp();
             } else {
@@ -514,7 +517,7 @@
                     }
                 }, 100);
             }
-        })();
+        });
     </script>
 </body>
 </html>
