@@ -37,4 +37,7 @@ window.ANV_CONFIG = {
     expenseCategories: ["Staff", "Utilities", "Maintenance", "F&B", "Marketing", "Housekeeping", "Transport", "Other"],
     paymentMethods: ["UPI", "Cash", "Card", "Bank Transfer", "Other"],
     googleFonts: ["Poppins", "Lato", "Montserrat", "Roboto", "Open Sans"]
+
 };
+// This tells the main app that the config is ready.
+window.dispatchEvent(new Event('configLoaded'));
