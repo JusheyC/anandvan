@@ -4,8 +4,84 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Anandvan - Login</title>
-    <link rel="stylesheet" href="style.css">
     <script src="config.js" defer></script>
+    <style>
+        :root {
+            --bg-color: #f8f9fa;
+            --text-color: #212529;
+            --primary-deep: #004d40;
+            --primary-light: #00796b;
+            --accent-gold: #ffc107;
+            --surface-color: #ffffff;
+            --border-color: #dee2e6;
+            --shadow-color: rgba(0, 0, 0, 0.1);
+            --danger-color: #dc3545;
+            --font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+            --border-radius: 12px;
+        }
+        body {
+            font-family: var(--font-family);
+            margin: 0;
+        }
+        .login-body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, var(--primary-deep), var(--primary-light));
+        }
+        .login-container { text-align: center; }
+        .login-card {
+            background: var(--surface-color);
+            padding: 2rem 3rem;
+            border-radius: var(--border-radius);
+            box-shadow: 0 10px 30px var(--shadow-color);
+            max-width: 350px;
+        }
+        .login-card .logo {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 1rem;
+        }
+        .login-card h1 {
+            margin: 0;
+            color: var(--primary-deep);
+        }
+        .login-card p {
+            margin-bottom: 1.5rem;
+            color: #6c757d;
+        }
+        .login-card input {
+            width: 100%;
+            padding: 0.75rem;
+            margin-bottom: 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 1rem;
+        }
+        .login-card button {
+            width: 100%;
+            padding: 0.75rem;
+            border: none;
+            border-radius: 8px;
+            background: var(--accent-gold);
+            color: var(--primary-deep);
+            font-weight: bold;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .login-card button:hover {
+            transform: translateY(-2px);
+        }
+        .error-message {
+            color: var(--danger-color);
+            font-size: 0.9rem;
+            min-height: 1.2rem;
+            margin-top: 0.5rem;
+        }
+    </style>
 </head>
 <body class="login-body">
     <div class="login-container">
@@ -22,28 +98,45 @@
     </div>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // Load brand info from config
-            const config = window.ANV_CONFIG;
-            document.getElementById('login-logo').src = config.settings.logoUrl;
-            document.getElementById('login-brand-name').textContent = config.settings.name;
-            document.getElementById('login-tagline').textContent = config.settings.tagline;
-
-            const loginForm = document.getElementById('login-form');
-            const pinInput = document.getElementById('pin-input');
-            const errorMessage = document.getElementById('error-message');
-
-            loginForm.addEventListener('submit', (e) => {
-                e.preventDefault();
-                if (pinInput.value === config.pin) {
-                    // Use sessionStorage to keep user logged in for the session
-                    sessionStorage.setItem('anv_authenticated', 'true');
-                    window.location.href = 'index.html';
-                } else {
-                    errorMessage.textContent = 'Invalid PIN. Please try again.';
-                    pinInput.value = '';
-                    pinInput.focus();
+            // Robustly wait for config to be loaded
+            const initLogin = () => {
+                const config = window.ANV_CONFIG;
+                if (!config) {
+                    console.error("Config file not loaded!");
+                    return;
                 }
-            });
+                
+                // Dynamically set theme colors for this page
+                document.documentElement.style.setProperty('--primary-deep', config.settings.primaryDeepColor || '#004d40');
+                document.documentElement.style.setProperty('--primary-light', config.settings.primaryLightColor || '#00796b');
+                document.documentElement.style.setProperty('--accent-gold', config.settings.accentGoldColor || '#ffc107');
+
+                document.getElementById('login-logo').src = config.settings.logoUrl;
+                document.getElementById('login-brand-name').textContent = config.settings.name;
+                document.getElementById('login-tagline').textContent = config.settings.tagline;
+
+                const loginForm = document.getElementById('login-form');
+                const pinInput = document.getElementById('pin-input');
+                const errorMessage = document.getElementById('error-message');
+
+                loginForm.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    if (pinInput.value === config.pin) {
+                        sessionStorage.setItem('anv_authenticated', 'true');
+                        window.location.href = 'index.html';
+                    } else {
+                        errorMessage.textContent = 'Invalid PIN. Please try again.';
+                        pinInput.value = '';
+                        pinInput.focus();
+                    }
+                });
+            };
+
+            if (window.ANV_CONFIG) {
+                initLogin();
+            } else {
+                window.addEventListener('configLoaded', initLogin);
+            }
         });
     </script>
 </body>
