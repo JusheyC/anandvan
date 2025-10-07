@@ -8,7 +8,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <style>
+    <style id="app-styles">
         :root {
             --bg-color: #f8f9fa;
             --text-color: #212529;
@@ -326,13 +326,11 @@
     
     <script src="config.js"></script>
     <script>
-        /**
-         * ANANDVAN MANAGEMENT TOOL (v5 - Final & Stable)
-         */
         function mainApp() {
             window.ANV = {
                 state: { settings: {}, bookings: [], expenses: [], menu: [] },
                 elements: {}, charts: {}, activeBookingId: null, activeExpenseId: null, activeInvoiceBookingId: null,
+
                 theme: {
                     apply: () => {
                         const { settings } = ANV.state; const defaults = window.ANV_CONFIG.settings; const root = document.documentElement;
@@ -387,7 +385,7 @@
                     onRemoveCafeItem: (itemId) => { if (!ANV.activeInvoiceBookingId) return; const bookingIndex = ANV.state.bookings.findIndex(b => b.id === ANV.activeInvoiceBookingId); if (bookingIndex === -1) return; const booking = ANV.state.bookings[bookingIndex]; booking.cafeItems = booking.cafeItems.filter(item => item.id !== itemId); const cafeSubtotal = booking.cafeItems.reduce((sum, item) => sum + ANV.util.num(item.amount), 0); const convenienceFee = cafeSubtotal * (ANV.util.num(ANV.state.settings.convenienceFeePercentage) / 100); booking.cafeBill = cafeSubtotal + convenienceFee; booking.total = (ANV.util.num(booking.roomRate) * ANV.util.num(booking.nights)) + ANV.util.num(booking.cafeBill); ANV.stateManager.save(); ANV.render.invoiceStudio(); ANV.render.bookings(); },
                     onAddCafeItem: () => { if (!ANV.activeInvoiceBookingId) return; const bookingIndex = ANV.state.bookings.findIndex(b => b.id === ANV.activeInvoiceBookingId); if (bookingIndex === -1) return; const booking = ANV.state.bookings[bookingIndex]; const menuItemId = ANV.elements.invoice.menuItemSelect.value; const qty = ANV.util.num(ANV.elements.invoice.menuItemQty.value); const menuItem = ANV.state.menu.find(m => m.id === menuItemId); if (!menuItem || qty <= 0) { console.error("Could not find menu item with ID:", menuItemId); return; } const newItem = { id: ANV.util.uid('CI'), item: menuItem.name, qty: qty, rate: ANV.util.num(menuItem.rate), amount: ANV.util.num(menuItem.rate) * qty }; if (!booking.cafeItems) booking.cafeItems = []; booking.cafeItems.push(newItem); const cafeSubtotal = booking.cafeItems.reduce((sum, item) => sum + ANV.util.num(item.amount), 0); const convenienceFee = cafeSubtotal * (ANV.util.num(ANV.state.settings.convenienceFeePercentage) / 100); booking.cafeBill = cafeSubtotal + convenienceFee; booking.total = (ANV.util.num(booking.roomRate) * ANV.util.num(booking.nights)) + ANV.util.num(booking.cafeBill); ANV.stateManager.save(); ANV.render.invoiceStudio(); ANV.render.bookings(); },
                     onSaveSettings: (e) => { e.preventDefault(); const formData = new FormData(e.target); const feePercentage = ANV.util.num(formData.get('convenienceFeePercentage')); formData.set('convenienceFeePercentage', feePercentage); ANV.state.settings = { ...ANV.state.settings, ...Object.fromEntries(formData.entries()) }; ANV.stateManager.save(); ANV.theme.apply(); ANV.render.all(); alert('Settings saved!'); },
-                    onPrint: (type) => { const printArea = document.createElement('div'); const htmlToPrint = type === 'cafe' ? ANV.elements.invoice.printArea.dataset.cafeBillHtml : ANV.elements.invoice.printArea.dataset.voucherHtml; if (!htmlToPrint) return; printArea.innerHTML = htmlToPrint; document.body.appendChild(printArea); window.print(); document.body.removeChild(printArea); },
+                    onPrint: (type) => { const htmlToPrint = type === 'cafe' ? ANV.elements.invoice.printArea.dataset.cafeBillHtml : ANV.elements.invoice.printArea.dataset.voucherHtml; if (!htmlToPrint) return; const iframe = document.createElement('iframe'); iframe.style.position = 'absolute'; iframe.style.width = '0'; iframe.style.height = '0'; iframe.style.border = '0'; iframe.onload = function() { try { iframe.contentWindow.focus(); iframe.contentWindow.print(); } catch (e) { console.error("Print failed:", e); } finally { document.body.removeChild(iframe); } }; document.body.appendChild(iframe); const doc = iframe.contentWindow.document; doc.open(); const appStyles = document.getElementById('app-styles').innerHTML; doc.write(`<html><head><title>Print</title><style>${appStyles}</style></head><body>${htmlToPrint}</body></html>`); doc.close(); },
                     showBookingModal: (bookingId = null) => { ANV.activeBookingId = bookingId; const booking = bookingId ? ANV.state.bookings.find(b => b.id === bookingId) : {}; const title = bookingId ? 'Edit Booking' : 'New Booking'; const formHtml = `<form id="booking-form" class="modal-form"><label class="full-width">Guest Name <input type="text" name="guest" required value="${booking.guest || ''}"></label><label>Phone <input type="tel" name="phone" value="${booking.phone || ''}"></label><label>Email <input type="email" name="email" value="${booking.email || ''}"></label><label>Source <select name="source">${window.ANV_CONFIG.bookingSources.map(s => `<option value="${s}" ${booking.source === s ? 'selected' : ''}>${s}</option>`).join('')}</select></label><label>Room <select name="room">${window.ANV_CONFIG.roomTypes.map(r => `<option value="${r}" ${booking.room === r ? 'selected' : ''}>${r}</option>`).join('')}</select></label><label>Check-in <input type="date" name="checkIn" value="${booking.checkIn || ANV.util.today()}"></label><label>Check-out <input type="date" name="checkOut" value="${booking.checkOut || ''}"></label><label>Nights <input type="number" name="nights" readonly value="${booking.nights || 1}"></label><label>Room Rate (per night) <input type="number" name="roomRate" step="0.01" value="${booking.roomRate || ''}"></label><div class="modal-checkbox-group full-width"><label><input type="checkbox" name="stayPaid" ${booking.stayPaid ? 'checked' : ''}> Stay Paid</label><label><input type="checkbox" name="cafePaid" ${booking.cafePaid ? 'checked' : ''}> Café Paid</label></div><label class="full-width">Notes <textarea name="notes" rows="3">${booking.notes || ''}</textarea></label><h3 class="full-width">Total: <span id="booking-total">${ANV.util.money(booking.total || 0)}</span></h3><button type="submit" class="primary-button full-width">Save Booking</button></form>`; ANV.showModal(title, formHtml); const form = document.getElementById('booking-form'); const updateTotals = () => { const nights = ANV.util.nights(form.elements.checkIn.value, form.elements.checkOut.value); form.elements.nights.value = nights; const cafeBill = ANV.activeBookingId ? ANV.util.num(ANV.state.bookings.find(b=>b.id===ANV.activeBookingId).cafeBill) : 0; const total = ANV.util.num(form.elements.roomRate.value) * nights + cafeBill; document.getElementById('booking-total').textContent = ANV.util.money(total); }; form.elements.checkIn.addEventListener('change', updateTotals); form.elements.checkOut.addEventListener('change', updateTotals); form.elements.roomRate.addEventListener('input', updateTotals); },
                     onSaveBooking: (e) => { e.preventDefault(); const form = e.target; const formData = new FormData(form); const bookingData = Object.fromEntries(formData.entries()); const nights = ANV.util.nights(bookingData.checkIn, bookingData.checkOut); const roomRate = ANV.util.num(bookingData.roomRate); const cafeBill = ANV.activeBookingId ? ANV.util.num(ANV.state.bookings.find(b=>b.id===ANV.activeBookingId).cafeBill) : 0; const updatedBooking = { guest: bookingData.guest, phone: bookingData.phone, email: bookingData.email, source: bookingData.source, room: bookingData.room, checkIn: bookingData.checkIn, checkOut: bookingData.checkOut, nights: nights, roomRate: roomRate, stayPaid: form.elements.stayPaid.checked, cafePaid: form.elements.cafePaid.checked, notes: bookingData.notes, cafeBill: cafeBill, cafeItems: ANV.activeBookingId ? ANV.state.bookings.find(b=>b.id===ANV.activeBookingId).cafeItems : [], }; updatedBooking.total = (updatedBooking.roomRate * updatedBooking.nights) + updatedBooking.cafeBill; if (ANV.activeBookingId) { const index = ANV.state.bookings.findIndex(b => b.id === ANV.activeBookingId); ANV.state.bookings[index] = { ...ANV.state.bookings[index], ...updatedBooking }; } else { updatedBooking.id = ANV.util.uid('BK'); updatedBooking.invoiceNo = ANV.util.nextInvoiceNo(); ANV.state.bookings.push(updatedBooking); } ANV.stateManager.save(); ANV.render.all(); ANV.hideModal(); },
                     onDeleteBooking: (bookingId) => { if (confirm('Are you sure you want to delete this booking? This cannot be undone.')) { ANV.state.bookings = ANV.state.bookings.filter(b => b.id !== bookingId); ANV.stateManager.save(); ANV.render.all(); } },
@@ -398,6 +396,7 @@
                     onSaveMenu: () => { const menuText = ANV.elements.settings.menuEditor.value; const lines = menuText.split('\n').filter(line => line.trim() !== ''); const newMenu = lines.map(line => { const parts = line.split(','); if (parts.length < 2) return null; const name = parts[0].trim(); const rate = ANV.util.num(parts.slice(1).join('').trim()); if (!name || isNaN(rate)) return null; return { id: ANV.util.uid('MENU'), name, rate }; }).filter(Boolean); ANV.state.menu = newMenu; ANV.stateManager.save(); ANV.render.invoiceStudio(); alert('Menu saved!'); },
                     onImportJson: (e) => { const file = e.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = (event) => { try { const importedState = JSON.parse(event.target.result); if (importedState.settings && importedState.bookings && importedState.expenses && importedState.menu) { if (confirm('This will replace all current data. Are you sure?')) { ANV.state = importedState; ANV.stateManager.save(); window.location.reload(); } } else { throw new Error("Invalid data structure."); } } catch (err) { alert('Error importing file. Make sure it is a valid backup file.'); } finally { e.target.value = null; } }; reader.readAsText(file); },
                 },
+
                 init: () => {
                     if (sessionStorage.getItem('anv_authenticated') !== 'true') { window.location.href = 'login.html'; return; }
                     ANV.stateManager.load();
@@ -407,6 +406,7 @@
                     ANV.attachListeners();
                     ANV.render.all();
                 },
+
                 cacheElements: () => {
                     ANV.elements = {
                         modal: document.getElementById('modal'), modalTitle: document.getElementById('modal-title'), modalBody: document.getElementById('modal-body'),
@@ -418,6 +418,7 @@
                         settings: { form: document.getElementById('settings-form'), menuEditor: document.getElementById('menu-editor') }
                     };
                 },
+                
                 initCharts: () => {
                     if (typeof Chart === 'undefined') { console.warn("Chart.js not loaded, skipping chart initialization."); return; }
                     Chart.defaults.font.family = 'inherit';
@@ -432,6 +433,7 @@
                         ANV.charts.expenseBreakdown = new Chart(chartContexts.expenseBreakdown, { type: 'doughnut', data: { labels: [], datasets: [{ label: 'Expenses', data: [], backgroundColor: [ANV.state.settings.primaryDeepColor, ANV.state.settings.primaryLightColor, ANV.state.settings.accentGoldColor, '#b2dfdb', '#ff8f00', '#ff6f00', '#757575'] }] }, options: { responsive: true, plugins: { title: { display: true, text: 'Expense Breakdown (YTD)' } } } });
                     }
                 },
+
                 attachListeners: () => {
                     document.querySelector('.app-nav').addEventListener('click', ANV.handlers.onTabClick);
                     document.getElementById('logout-button').addEventListener('click', () => { sessionStorage.removeItem('anv_authenticated'); window.location.href = 'login.html'; });
@@ -453,12 +455,34 @@
                     document.getElementById('import-json-input').addEventListener('change', ANV.handlers.onImportJson);
                     document.getElementById('reset-data-btn').addEventListener('click', () => { if (confirm('DANGER! This will delete all data permanently. Are you absolutely sure?')) { localStorage.removeItem(window.ANV_CONFIG.localStorageKey); window.location.reload(); } });
                 },
+                
                 showModal: (title, bodyHtml) => { ANV.elements.modalTitle.textContent = title; ANV.elements.modalBody.innerHTML = bodyHtml; ANV.elements.modal.classList.add('active'); },
                 hideModal: () => { ANV.elements.modal.classList.remove('active'); ANV.elements.modalBody.innerHTML = ''; }
             };
-            document.addEventListener('DOMContentLoaded', ANV.init);
+            
+            // This is the trigger that starts the app.
+            ANV.init();
         }
-        mainApp();
+
+        // This robustly waits for the config file to load before initializing the app.
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.ANV_CONFIG) {
+                mainApp();
+            } else {
+                let configTries = 0;
+                const configInterval = setInterval(() => {
+                    configTries++;
+                    if (window.ANV_CONFIG) {
+                        clearInterval(configInterval);
+                        mainApp();
+                    }
+                    if (configTries > 50) { // Timeout after 5 seconds
+                        clearInterval(configInterval);
+                        alert("Error: Critical file config.js could not be loaded. The app cannot start.");
+                    }
+                }, 100);
+            }
+        });
     </script>
 </body>
 </html>
