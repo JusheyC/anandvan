@@ -383,7 +383,7 @@
                     invoicePreview: () => { const booking = ANV.state.bookings.find(b => b.id === ANV.activeInvoiceBookingId); const printArea = ANV.elements.invoice.printArea; if (!booking) { ANV.elements.invoice.content.classList.add('hidden'); ANV.elements.invoice.placeholder.classList.remove('hidden'); printArea.innerHTML = ''; return; } ANV.elements.invoice.content.classList.remove('hidden'); ANV.elements.invoice.placeholder.classList.add('hidden'); const { settings } = ANV.state; const cafeSubtotal = (booking.cafeItems || []).reduce((sum, item) => sum + ANV.util.num(item.amount), 0); const convenienceFee = cafeSubtotal * (ANV.util.num(settings.convenienceFeePercentage) / 100); const cafeTotal = cafeSubtotal + convenienceFee; const renderSimplePreview = () => { const cafeItems = booking.cafeItems || []; return `<div class="invoice-preview-wrapper"><h2>Café Bill For: ${booking.guest}</h2><p><strong>Invoice No:</strong> ${booking.invoiceNo || 'N/A'}</p><table class="invoice-preview-table"><thead><tr><th>Item</th><th>Qty</th><th>Rate</th><th>Amount</th><th></th></tr></thead><tbody>${cafeItems.length > 0 ? cafeItems.map(item => `<tr><td>${item.item}</td><td>${item.qty}</td><td>${ANV.util.money(item.rate)}</td><td>${ANV.util.money(item.amount)}</td><td style="width: 1%;"><button class="action-btn-remove" onclick="ANV.handlers.onRemoveCafeItem('${item.id}')" title="Remove Item">🗑️</button></td></tr>`).join('') : `<tr><td colspan="5" style="text-align:center;">No café items added yet.</td></tr>`}</tbody><tfoot><tr><td colspan="4">Subtotal</td><td>${ANV.util.money(cafeSubtotal)}</td></tr><tr><td colspan="4">Convenience Fee (${settings.convenienceFeePercentage}%)</td><td>${ANV.util.money(convenienceFee)}</td></tr><tr class="total"><td colspan="4">Café Total</td><td>${ANV.util.money(cafeTotal)}</td></tr></tfoot></table></div>`; }; const generateSimplePrintHTML = (type) => { const stayTotal = ANV.util.num(booking.roomRate) * ANV.util.num(booking.nights); const grandTotal = stayTotal + cafeTotal; const isVoucher = type === 'voucher'; const title = isVoucher ? 'INVOICE' : 'Cafe Bill'; const billDate = new Date().toLocaleDateString('en-GB'); const items = isVoucher ? [{ item: `Room Stay (${booking.nights} nights)`, qty: 1, rate: stayTotal, amount: stayTotal }, ...(booking.cafeItems || [])] : (booking.cafeItems || []); const notes = booking.notes || settings.defaultInvoiceNotes || ""; let totalsHtml; if (isVoucher) { totalsHtml = `<tr><td>Subtotal</td><td>${ANV.util.money(stayTotal + cafeSubtotal)}</td></tr><tr><td>Convenience Fee</td><td>${ANV.util.money(convenienceFee)}</td></tr><tr class="grand-total"><td>Total</td><td>${ANV.util.money(grandTotal)}</td></tr>`; } else { totalsHtml = `<tr><td>Subtotal</td><td>${ANV.util.money(cafeSubtotal)}</td></tr><tr><td>Convenience Fee</td><td>${ANV.util.money(convenienceFee)}</td></tr><tr class="grand-total"><td>Total</td><td>${ANV.util.money(cafeTotal)}</td></tr>`; } return `<div class="isp-wrapper"><div class="isp-header"><div class="isp-header-left"><img src="${settings.logoUrl}" class="isp-logo" alt="Logo"><p>${settings.address}</p></div><div class="isp-header-right">${settings.qrCodeUrl ? `<img src="${settings.qrCodeUrl}" class="isp-qr-code"><p>${settings.name}<br>${settings.paymentRecipientName}</p>` : ''}</div></div><div class="isp-title"><h1>${title}</h1><p>${billDate}</p></div><div class="isp-parties"><div><h3>Invoice for</h3><p>${booking.guest}<br>${booking.phone || ''}</p></div><div><h3>Payable to</h3><p>${settings.paymentRecipientName}<br>${settings.phone}</p></div><div><h3>Invoice #</h3><p>${booking.invoiceNo || 'N/A'}</p></div></div><table class="isp-items-table"><thead><tr><th>Description</th><th>Date</th><th>Qty</th><th>Unit price</th><th>Total price</th></tr></thead><tbody>${items.map(item => `<tr><td>${item.item || item.name}</td><td>${billDate}</td><td>${item.qty}</td><td>${ANV.util.money(item.rate)}</td><td>${ANV.util.money(item.amount)}</td></tr>`).join('')}</tbody></table><div class="isp-totals"><table>${totalsHtml}</table></div><div class="isp-footer"><p>${notes}</p></div></div>`; }; printArea.innerHTML = renderSimplePreview(); printArea.dataset.cafeBillHtml = generateSimplePrintHTML('cafe'); printArea.dataset.voucherHtml = generateSimplePrintHTML('voucher'); },
                     settings: () => { const { settings } = ANV.state; const form = ANV.elements.settings.form; for (const key in settings) { if (form.elements[key]) form.elements[key].value = settings[key]; } ANV.elements.settings.menuEditor.value = ANV.state.menu.map(item => `${item.name}, ${item.rate}`).join('\n'); const fontSelect = document.getElementById('font-family-select'); fontSelect.innerHTML = window.ANV_CONFIG.googleFonts.map(font => `<option value="${font}" ${settings.fontFamily === font ? 'selected' : ''}>${font}</option>`).join(''); },
                 },
-                handlers: {
+               handlers: {
     onTabClick: (e) => {
         if (!e.target.classList.contains('nav-tab')) return;
         document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
@@ -440,31 +440,13 @@
         const htmlToPrint = type === 'cafe' ? ANV.elements.invoice.printArea.dataset.cafeBillHtml : ANV.elements.invoice.printArea.dataset.voucherHtml;
         if (!htmlToPrint) return;
 
-        const iframe = document.createElement('iframe');
-        iframe.style.position = 'absolute';
-        iframe.style.width = '0';
-        iframe.style.height = '0';
-        iframe.style.border = '0';
+        const printContainer = document.createElement('div');
+        printContainer.innerHTML = htmlToPrint;
+        document.body.appendChild(printContainer);
 
-        iframe.onload = function() {
-            try {
-                iframe.contentWindow.focus();
-                iframe.contentWindow.print();
-            } catch (e) {
-                console.error("Print failed:", e);
-            } finally {
-                setTimeout(() => {
-                    document.body.removeChild(iframe);
-                }, 1000);
-            }
-        };
+        window.print();
 
-        document.body.appendChild(iframe);
-        const doc = iframe.contentWindow.document;
-        doc.open();
-        const appStyles = document.getElementById('app-styles').innerHTML;
-        doc.write(`<html><head><title>Print</title><style>${appStyles}</style></head><body>${htmlToPrint}</body></html>`);
-        doc.close();
+        document.body.removeChild(printContainer);
     },
     showBookingModal: (bookingId = null) => {
         ANV.activeBookingId = bookingId;
@@ -654,6 +636,7 @@
     </script>
 </body>
 </html>
+
 
 
 
