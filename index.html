@@ -125,9 +125,7 @@
             .isp-items-table thead { border-bottom: 2px solid #333; }
             .isp-items-table th { padding: 3mm 1mm; text-align: left; color: #555; font-weight: bold; }
             .isp-items-table td { padding: 3mm 1mm; border-bottom: 1px solid #eee; }
-            .isp-items-table th:nth-child(3), .isp-items-table td:nth-child(3),
-            .isp-items-table th:nth-child(4), .isp-items-table td:nth-child(4),
-            .isp-items-table th:nth-child(5), .isp-items-table td:nth-child(5) { text-align: right; }
+            .isp-items-table th:nth-child(3), .isp-items-table td:nth-child(3), .isp-items-table th:nth-child(4), .isp-items-table td:nth-child(4), .isp-items-table th:nth-child(5), .isp-items-table td:nth-child(5) { text-align: right; }
             .isp-totals { margin-left: auto; width: 50%; max-width: 250px; font-size: 11pt; }
             .isp-totals table { width: 100%; }
             .isp-totals td { padding: 3mm; }
@@ -326,32 +324,65 @@
     
     <script src="config.js"></script>
     <script>
-        /**
-         * ANANDVAN MANAGEMENT TOOL (v5 - Final & Stable)
-         */
         function mainApp() {
             const ANV = {
                 state: { settings: {}, bookings: [], expenses: [], menu: [] },
                 elements: {}, charts: {}, activeBookingId: null, activeExpenseId: null, activeInvoiceBookingId: null,
+
                 theme: {
                     apply: () => {
-                        const { settings } = ANV.state; const defaults = window.ANV_CONFIG.settings; const root = document.documentElement;
+                        const { settings } = ANV.state;
+                        const defaults = window.ANV_CONFIG.settings;
+                        const root = document.documentElement;
                         root.style.setProperty('--primary-deep', settings.primaryDeepColor || defaults.primaryDeepColor);
                         root.style.setProperty('--primary-light', settings.primaryLightColor || defaults.primaryLightColor);
                         root.style.setProperty('--accent-gold', settings.accentGoldColor || defaults.accentGoldColor);
                         root.style.setProperty('--font-family', `"${settings.fontFamily || defaults.fontFamily}", sans-serif`);
-                        const existingFontLink = document.getElementById('google-font-link'); if (existingFontLink) existingFontLink.remove();
+                        const existingFontLink = document.getElementById('google-font-link');
+                        if (existingFontLink) existingFontLink.remove();
                         const font = settings.fontFamily || defaults.fontFamily;
-                        if (font) { const link = document.createElement('link'); link.id = 'google-font-link'; link.rel = 'stylesheet'; link.href = `https://fonts.googleapis.com/css2?family=${font.replace(/ /g, '+')}:wght@400;500;700&display=swap`; document.head.appendChild(link); }
+                        if (font) {
+                            const link = document.createElement('link');
+                            link.id = 'google-font-link';
+                            link.rel = 'stylesheet';
+                            link.href = `https://fonts.googleapis.com/css2?family=${font.replace(/ /g, '+')}:wght@400;500;700&display=swap`;
+                            document.head.appendChild(link);
+                        }
                     }
                 },
+
                 util: {
                     num: (val) => Number(String(val).replace(/,/g, '')) || 0,
-                    money: (n) => { const { currency, currencySymbol } = ANV.state.settings; const amount = ANV.util.num(n); try { return new Intl.NumberFormat('en-IN', { style: 'currency', currency: currency || 'INR', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount); } catch (e) { return `${currencySymbol || '₹'}${amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`; } },
+                    money: (n) => {
+                        const { currency, currencySymbol } = ANV.state.settings;
+                        const amount = ANV.util.num(n);
+                        try {
+                            return new Intl.NumberFormat('en-IN', { style: 'currency', currency: currency || 'INR', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount);
+                        } catch (e) {
+                            return `${currencySymbol || '₹'}${amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                        }
+                    },
                     uid: (prefix) => `${prefix}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
                     today: () => new Date().toISOString().split('T')[0],
-                    nights: (checkIn, checkOut) => { if (!checkIn || !checkOut) return 1; const ci = new Date(checkIn); const co = new Date(checkOut); if (isNaN(ci) || isNaN(co) || co <= ci) return 1; return Math.max(1, Math.ceil(Math.abs(co - ci) / 864e5)); },
+                    nights: (checkIn, checkOut) => {
+                        if (!checkIn || !checkOut) return 1;
+                        const ci = new Date(checkIn); const co = new Date(checkOut);
+                        if (isNaN(ci) || isNaN(co) || co <= ci) return 1;
+                        return Math.max(1, Math.ceil(Math.abs(co - ci) / 864e5));
+                    },
+                    nextInvoiceNo: () => {
+                        const prefix = ANV.state.settings.invoicePrefix; const year = new Date().getFullYear();
+                        const yearPrefix = `${prefix}-${year}-`;
+                        const currentYearInvoices = ANV.state.bookings.map(b => b.invoiceNo).filter(inv => inv && inv.startsWith(yearPrefix));
+                        if (currentYearInvoices.length === 0) return `${yearPrefix}001`;
+                        const maxNum = currentYearInvoices.reduce((max, inv) => {
+                            const num = parseInt(inv.substring(yearPrefix.length), 10);
+                            return num > max ? num : max;
+                        }, 0);
+                        return `${yearPrefix}${(maxNum + 1).toString().padStart(3, '0')}`;
+                    },
                 },
+
                 stateManager: {
                     save: () => localStorage.setItem(window.ANV_CONFIG.localStorageKey, JSON.stringify(ANV.state)),
                     load: () => {
@@ -370,6 +401,7 @@
                         }
                     }
                 },
+
                 render: {
                     all: () => { ANV.render.header(); ANV.render.dashboard(); ANV.render.bookings(); ANV.render.expenses(); ANV.render.invoiceStudio(); ANV.render.settings(); },
                     header: () => { const { settings } = ANV.state; ANV.elements.header.logo.src = settings.logoUrl; ANV.elements.header.brandName.textContent = settings.name; ANV.elements.header.tagline.textContent = settings.tagline; },
@@ -464,8 +496,25 @@
             document.addEventListener('DOMContentLoaded', ANV.init);
         }
 
-        mainApp();
-
+        // This robustly waits for the config file to load before initializing the app.
+        (function() {
+            if (window.ANV_CONFIG) {
+                mainApp();
+            } else {
+                let configTries = 0;
+                const configInterval = setInterval(() => {
+                    configTries++;
+                    if (window.ANV_CONFIG) {
+                        clearInterval(configInterval);
+                        mainApp();
+                    }
+                    if (configTries > 50) { // Timeout after 5 seconds
+                        clearInterval(configInterval);
+                        alert("Error: Critical file config.js could not be loaded. The app cannot start.");
+                    }
+                }, 100);
+            }
+        })();
     </script>
 </body>
 </html>
