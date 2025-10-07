@@ -1,4 +1,4 @@
-# Anandvan - A Nature Homestay Management App
+# Anandvan, Homestay Management App
 
 This is a single-folder, client-side web application for managing bookings, expenses, and invoices for Anandvan.
 
@@ -13,4 +13,5 @@ This is a single-folder, client-side web application for managing bookings, expe
 ## Configuration
 
 * To change the **login PIN**, edit the `pin` value in `config.js`. The default is "1111".
+
 * To change the **business details** (name, address, etc.), you can either edit the defaults in `config.js` or change them in the "Settings" tab within the app itself.
