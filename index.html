@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anandvan - Management</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+</head>
+<body>
+    <header class="app-header">
+        <div class="brand">
+            <img id="header-logo" src="./logo.png" alt="Anandvan Logo" class="logo-small">
+            <div>
+                <h1 id="header-brand-name">Anandvan</h1>
+                <p id="header-tagline">A Nature Homestay</p>
+            </div>
+        </div>
+        <nav class="app-nav">
+            <button class="nav-tab active" data-tab="dashboard">Dashboard</button>
+            <button class="nav-tab" data-tab="bookings">Bookings</button>
+            <button class="nav-tab" data-tab="expenses">Expenses</button>
+            <button class="nav-tab" data-tab="invoice-studio">Invoice Studio</button>
+            <button class="nav-tab" data-tab="settings">Settings</button>
+        </nav>
+        <button id="logout-button" class="logout-button">Logout</button>
+    </header>
+
+    <main class="app-main">
+        <section id="dashboard-view" class="app-view active">
+            <div class="dashboard-grid">
+                <div class="stat-card"><h3>MTD Income</h3><p id="mtd-income">₹0</p></div>
+                <div class="stat-card"><h3>MTD Expenses</h3><p id="mtd-expenses">₹0</p></div>
+                <div class="stat-card"><h3>YTD Income</h3><p id="ytd-income">₹0</p></div>
+                <div class="stat-card"><h3>YTD Expenses</h3><p id="ytd-expenses">₹0</p></div>
+                <div class="stat-card"><h3>Cafe Total (YTD)</h3><p id="ytd-cafe">₹0</p></div>
+                <div class="stat-card"><h3>Stay Total (YTD)</h3><p id="ytd-stay">₹0</p></div>
+                <div class="stat-card"><h3>Invoices (YTD)</h3><p id="ytd-invoices">0</p></div>
+                <div class="stat-card"><h3>Active Bookings</h3><p id="active-bookings">0</p></div>
+            </div>
+            <div class="charts-grid">
+                <div class="chart-container"><canvas id="cafeVsStayChart"></canvas></div>
+                <div class="chart-container"><canvas id="revenueBySourceChart"></canvas></div>
+                <div class="chart-container"><canvas id="expenseBreakdownChart"></canvas></div>
+            </div>
+        </section>
+
+        <section id="bookings-view" class="app-view">
+            <div class="view-header">
+                <h2>Bookings</h2>
+                <div class="view-controls">
+                    <input type="search" id="booking-search" placeholder="Search bookings...">
+                    <button id="export-bookings-csv" class="secondary-button">Export CSV</button>
+                    <button id="add-booking-btn" class="primary-button">New Booking</button>
+                </div>
+            </div>
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Check-in</th><th>Guest</th><th>Room</th><th>Source</th><th>Nights</th><th>Room Rate</th>
+                            <th>Café Bill</th><th>Total</th><th>Stay Paid</th><th>Café Paid</th><th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="bookings-table-body"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="expenses-view" class="app-view">
+            <div class="view-header">
+                <h2>Expenses</h2>
+                <div class="view-controls">
+                    <input type="search" id="expense-search" placeholder="Search expenses...">
+                    <button id="export-expenses-csv" class="secondary-button">Export CSV</button>
+                    <button id="add-expense-btn" class="primary-button">New Expense</button>
+                </div>
+            </div>
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th><th>Category</th><th>Subcategory</th><th>Vendor</th><th>Amount</th><th>Method</th><th>Notes</th><th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="expenses-table-body"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="invoice-studio-view" class="app-view">
+            <div class="studio-layout">
+                <div class="studio-sidebar">
+                    <h3>Select Booking</h3>
+                    <input type="search" id="invoice-booking-search" placeholder="Search by guest or invoice...">
+                    <ul id="invoice-booking-list" class="invoice-booking-list"></ul>
+                </div>
+                <div class="studio-main">
+                    <div id="invoice-placeholder">
+                        <p>Select a booking from the left to manage their café bill.</p>
+                    </div>
+                    <div id="invoice-content" class="hidden">
+                        <div class="invoice-controls">
+                            <h3>Add Café Items</h3>
+                            <div class="item-add-form">
+                                <select id="menu-item-select"></select>
+                                <input type="number" id="menu-item-qty" value="1" min="1">
+                                <button id="add-cafe-item-btn" class="primary-button">Add Item</button>
+                            </div>
+                            <div class="invoice-actions">
+                                <button id="print-cafe-bill" class="secondary-button">Print Café Bill</button>
+                                <button id="print-voucher" class="secondary-button">Print Full Voucher</button>
+                            </div>
+                        </div>
+                        <div class="studio-preview-pane">
+                            <div id="invoice-print-area"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="settings-view" class="app-view">
+            <h2>Settings</h2>
+            <div class="settings-grid">
+                <form id="settings-form" class="settings-card form-card">
+                    <h3>Business Details</h3>
+                    <label>Business Name <input type="text" name="name"></label>
+                    <label>Tagline <input type="text" name="tagline"></label>
+                    <label>Address <textarea name="address" rows="4"></textarea></label>
+                    <label>Phone <input type="tel" name="phone"></label>
+                    <label>Email <input type="email" name="email"></label>
+                    <label>Payment Recipient Name <input type="text" name="paymentRecipientName"></label>
+                    <label>Logo URL <input type="text" name="logoUrl"></label>
+                    <label>QR Code URL <input type="text" name="qrCodeUrl"></label>
+                    
+                    <h3>Financials</h3>
+                    <label>Invoice Prefix <input type="text" name="invoicePrefix"></label>
+                    <label>Convenience Fee (%)<input type="number" name="convenienceFeePercentage" step="0.1"></label>
+                    <label>Currency Code (e.g., INR) <input type="text" name="currency"></label>
+                    <label>Currency Symbol (Fallback) <input type="text" name="currencySymbol" style="width: 50px;"></label>
+
+                    <h3>Invoice</h3>
+                    <label>Default Invoice Notes <textarea name="defaultInvoiceNotes" rows="3"></textarea></label>
+                </form>
+                
+                <div class="settings-card form-card">
+                    <h3>Theme Customization</h3>
+                    <label>Primary Color (Deep) <input type="color" name="primaryDeepColor"></label>
+                    <label>Primary Color (Light) <input type="color" name="primaryLightColor"></label>
+                    <label>Accent Color <input type="color" name="accentGoldColor"></label>
+                    <label>Application Font
+                        <select name="fontFamily" id="font-family-select"></select>
+                    </label>
+                </div>
+
+                <div class="settings-card">
+                    <h3>Menu Editor</h3>
+                    <p>Enter items as <code>Name, Price</code>, one per line.</p>
+                    <textarea id="menu-editor" rows="10"></textarea>
+                    <button id="save-menu-btn" class="secondary-button">Save Menu</button>
+                </div>
+
+                <div class="settings-card">
+                    <h3>Data Management</h3>
+                    <div class="data-buttons">
+                        <button id="export-json-btn" class="secondary-button">Backup (Export JSON)</button>
+                        <label class="button-like-label">Restore (Import JSON)<input type="file" id="import-json-input" accept=".json" class="hidden-input"></label>
+                        <button id="reset-data-btn" class="danger-button">Reset All Data</button>
+                    </div>
+                </div>
+            </div>
+            <button type="submit" form="settings-form" class="primary-button" style="margin-top: 2rem; width: 100%;">Save All Settings</button>
+        </section>
+    </main>
+
+    <div id="modal" class="modal-overlay">
+        <div class="modal-content">
+            <button class="modal-close-btn">&times;</button>
+            <h2 id="modal-title">Modal Title</h2>
+            <div id="modal-body"></div>
+        </div>
+    </div>
+    
+    <script src="config.js" defer></script>
+    <script src="tool.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anandvan - Login</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="config.js" defer></script>
+</head>
+<body class="login-body">
+    <div class="login-container">
+        <div class="login-card">
+            <img id="login-logo" src="./logo.png" alt="Anandvan Logo" class="logo">
+            <h1 id="login-brand-name">Anandvan</h1>
+            <p id="login-tagline">A Nature Homestay</p>
+            <form id="login-form">
+                <input type="password" id="pin-input" placeholder="Enter PIN" required autocomplete="current-password">
+                <button type="submit">Login</button>
+                <p id="error-message" class="error-message"></p>
+            </form>
+        </div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Load brand info from config
+            const config = window.ANV_CONFIG;
+            document.getElementById('login-logo').src = config.settings.logoUrl;
+            document.getElementById('login-brand-name').textContent = config.settings.name;
+            document.getElementById('login-tagline').textContent = config.settings.tagline;
+
+            const loginForm = document.getElementById('login-form');
+            const pinInput = document.getElementById('pin-input');
+            const errorMessage = document.getElementById('error-message');
+
+            loginForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                if (pinInput.value === config.pin) {
+                    // Use sessionStorage to keep user logged in for the session
+                    sessionStorage.setItem('anv_authenticated', 'true');
+                    window.location.href = 'index.html';
+                } else {
+                    errorMessage.textContent = 'Invalid PIN. Please try again.';
+                    pinInput.value = '';
+                    pinInput.focus();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
